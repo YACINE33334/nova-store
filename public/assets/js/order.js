@@ -594,16 +594,16 @@
     const qty = Math.max(1, Math.min(99, Number(new URLSearchParams(location.search).get('qty')) || 1));
 
     (async () => {
-      try {
-        const { data } = await fetchJson('/api/i18n');
-        if (data && typeof data === 'object') OVERRIDES = data;
-      } catch (e) { /* usamos el idioma por defecto */ }
+      const [i18nRes, prodRes] = await Promise.all([
+        fetchJson('/api/i18n').catch(() => ({ data: null })),
+        fetchJson('/api/products?id=' + id + '&slim=1').catch(() => ({ ok: false, data: null })),
+      ]);
+      const { data } = i18nRes;
+      if (data && typeof data === 'object') OVERRIDES = data;
 
       let product = null;
-      try {
-        const { ok, data } = await fetchJson('/api/products?id=' + id);
-        if (ok && data && data.id) product = data;
-      } catch (e) { /* fall through */ }
+      const pdata = prodRes && prodRes.data;
+      if (prodRes && prodRes.ok && pdata && pdata.id) product = pdata;
       if (!product && window.NovaStore) {
         product = window.NovaStore.catalog.find((p) => p.id === id) || null;
       }

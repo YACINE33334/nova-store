@@ -19,6 +19,7 @@ const MIME = {
   '.jpeg': 'image/jpeg',
   '.svg': 'image/svg+xml',
   '.webp': 'image/webp',
+  '.gif': 'image/gif',
   '.ico': 'image/x-icon',
   '.woff': 'font/woff',
   '.woff2': 'font/woff2',
@@ -103,6 +104,102 @@ function pickEncoding(res) {
     return { name: 'gzip', create: () => zlib.createGzip({ level: 6 }) };
   }
   return null;
+}
+
+/* =========================================================
+   Product image extraction.
+   The database keeps images as base64 data-URLs (canonical).
+   For fast page loads we also materialise them as static
+   files (content-addressed by hash) and rewrite data-URLs to
+   those URLs in every API response. When a product is saved,
+   URLs are converted back into data-URLs so nothing is lost.
+   ========================================================= */
+const IMG_URL_PREFIX = '/assets/img/products';
+const IMG_DIR = path.join(PUBLIC_DIR, 'assets', 'img', 'products');
+
+const EXT_BY_TYPE = { png: '.png', jpeg: '.jpg', jpg: '.jpg', webp: '.webp', gif: '.gif', 'svg+xml': '.svg', avif: '.avif' };
+const MIME_BY_EXT = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif', svg: 'image/svg+xml', avif: 'image/avif' };
+const DATA_URL_RE = /data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+/g;
+const PROD_IMG_URL_RE = /\/assets\/img\/products\/([a-f0-9]{12})\.(png|jpg|jpeg|webp|gif|svg|avif)/g;
+
+const imgMemo = new Map();
+
+function decodeDataUrl(dataUrl) {
+  const m = /^data:image\/([a-zA-Z0-9.+-]+);base64,([\s\S]*)$/.exec(dataUrl);
+  if (!m) return null;
+  try { return { type: m[1].toLowerCase(), buf: Buffer.from(m[2], 'base64') }; }
+  catch (e) { return null; }
+}
+
+function imageUrlFromDataUrl(dataUrl) {
+  if (imgMemo.has(dataUrl)) return imgMemo.get(dataUrl);
+  let out = null;
+  try {
+    const d = decodeDataUrl(dataUrl);
+    const ext = d && EXT_BY_TYPE[d.type];
+    if (d && ext && d.buf.length) {
+      const hash = crypto.createHash('sha1').update(d.buf).digest('hex').slice(0, 12);
+      const name = hash + ext;
+      const filePath = path.join(IMG_DIR, name);
+      if (!imgMemo.has('file:' + name) && !fs.existsSync(filePath)) {
+        try { fs.mkdirSync(IMG_DIR, { recursive: true }); fs.writeFileSync(filePath, d.buf); } catch (e) { /* read-only fs */ }
+      }
+      out = IMG_URL_PREFIX + '/' + name;
+    }
+  } catch (e) { out = null; }
+  imgMemo.set(dataUrl, out);
+  return out;
+}
+
+function rewriteStrings(value) {
+  if (typeof value !== 'string') return value;
+  if (value.indexOf('data:image/') === -1) return value;
+  let replaced = value;
+  try {
+    replaced = value.replace(DATA_URL_RE, (m) => imageUrlFromDataUrl(m) || m);
+  } catch (e) { /* keep original */ }
+  return replaced;
+}
+
+function rewriteProductForWeb(product) {
+  if (!product || typeof product !== 'object') return product;
+  if (Array.isArray(product)) return product.map((v) => (typeof v === 'string' ? rewriteStrings(v) : rewriteProductForWeb(v)));
+  const out = {};
+  for (const key of Object.keys(product)) {
+    const v = product[key];
+    out[key] = typeof v === 'string' ? rewriteStrings(v) : rewriteProductForWeb(v);
+  }
+  return out;
+}
+
+function restoreProductImages(product) {
+  if (!product || typeof product !== 'object') return product;
+  if (Array.isArray(product)) { product.forEach(restoreProductImages); return product; }
+  for (const key of Object.keys(product)) {
+    const v = product[key];
+    if (typeof v === 'string' && v.indexOf(IMG_URL_PREFIX + '/') !== -1) {
+      product[key] = v.replace(PROD_IMG_URL_RE, (m, hash, ext) => {
+        const filePath = path.join(IMG_DIR, hash + '.' + ext);
+        try {
+          const buf = fs.readFileSync(filePath);
+          const type = MIME_BY_EXT[ext] || 'image/webp';
+          return 'data:' + type + ';base64,' + buf.toString('base64');
+        } catch (e) { return m; }
+      });
+    } else if (v && typeof v === 'object') {
+      restoreProductImages(v);
+    }
+  }
+  return product;
+}
+
+async function ensureProductImages(db) {
+  try {
+    const products = await db.listProducts();
+    for (const p of products) rewriteProductForWeb(p);
+  } catch (e) {
+    console.error('[images] extraction error: ' + e.message);
+  }
 }
 
 function readJsonBody(req) {
@@ -190,13 +287,21 @@ function createApiRoutes(db) {
       const idRaw = String(params.get('id') || '').trim();
       const id = Number(idRaw);
       const hasId = idRaw !== '' && !Number.isNaN(id);
-      if (hasId) {
+      if (hasId && params.get('slim') === '1') {
         const p = await db.getProduct(id);
-        sendJson(res, p ? 200 : 404, p || { error: 'Not found' });
+        if (!p) { sendJson(res, 404, { error: 'Not found' }); return true; }
+        sendJson(res, 200, rewriteProductForWeb({
+          id: p.id, name: p.name, cat: p.cat, price: p.price, old: p.old,
+          hue: p.hue, stock: p.stock,
+          images: Array.isArray(p.images) ? p.images.slice(0, 1) : [],
+        }));
+      } else if (hasId) {
+        const p = await db.getProduct(id);
+        sendJson(res, p ? 200 : 404, p ? rewriteProductForWeb(p) : { error: 'Not found' });
       } else {
         if (params.get('cards') === '1') {
           const list = await db.listProducts();
-          sendJson(res, 200, list.map((p) => ({
+          sendJson(res, 200, list.map((p) => rewriteProductForWeb({
             id: p.id,
             name: p.name,
             cat: p.cat,
@@ -211,7 +316,8 @@ function createApiRoutes(db) {
             images: Array.isArray(p.images) ? p.images.slice(0, 1) : []
           })));
         } else {
-          sendJson(res, 200, await db.listProducts());
+          const list = await db.listProducts();
+          sendJson(res, 200, list.map(rewriteProductForWeb));
         }
       }
       return true;
@@ -235,8 +341,9 @@ function createApiRoutes(db) {
         const existing = await db.getProduct(product.id);
         if (existing) product = Object.assign({}, existing, product);
       }
+      restoreProductImages(product);
       const saved = await db.saveProduct(product);
-      sendJson(res, 201, saved);
+      sendJson(res, 201, rewriteProductForWeb(saved));
       return true;
     }
 
@@ -259,7 +366,7 @@ function createApiRoutes(db) {
 
     // GET /api/settings — read store settings (public)
     if (urlPath === '/api/settings' && (method === 'GET' || method === 'HEAD')) {
-      sendJson(res, 200, await db.getSettings());
+      sendJson(res, 200, rewriteProductForWeb(await db.getSettings()));
       return true;
     }
 
@@ -270,6 +377,7 @@ function createApiRoutes(db) {
         sendJson(res, 400, { error: 'Invalid settings payload' });
         return true;
       }
+      restoreProductImages(body);
       await db.saveSettings(body);
       sendJson(res, 200, { ok: true });
       return true;
@@ -631,14 +739,19 @@ const ext = path.extname(filePath).toLowerCase();
   const contentType = MIME[ext] || 'application/octet-stream';
   const mtime = stats.mtime.toUTCString();
 
+  const COMPRESSIBLE_EXT = { '.html': 1, '.css': 1, '.js': 1, '.mjs': 1, '.json': 1, '.txt': 1, '.xml': 1, '.svg': 1, '.map': 1, '.webmanifest': 1, '.md': 1 };
+  const isProductImage = urlPath.indexOf(IMG_URL_PREFIX + '/') === 0;
+  const cacheMode = isProductImage
+    ? { cc: 'public, max-age=31536000, immutable', lm: mtime }
+    : { cc: 'no-cache', lm: mtime };
+  res.setHeader('Cache-Control', cacheMode.cc);
+  res.setHeader('Last-Modified', cacheMode.lm);
+
   if (req.headers['if-modified-since'] === mtime) {
-    res.writeHead(304, { 'Cache-Control': 'no-cache', 'Last-Modified': mtime });
+    res.writeHead(304, { 'Cache-Control': cacheMode.cc, 'Last-Modified': cacheMode.lm });
     res.end();
     return;
   }
-
-  const COMPRESSIBLE_EXT = { '.html': 1, '.css': 1, '.js': 1, '.mjs': 1, '.json': 1, '.txt': 1, '.xml': 1, '.svg': 1, '.map': 1, '.webmanifest': 1, '.md': 1 };
-  cacheControl(filePath, res);
 
   const enc = COMPRESSIBLE_EXT[ext] ? pickEncoding(res) : null;
   if (enc) {
@@ -656,6 +769,7 @@ const ext = path.extname(filePath).toLowerCase();
 
 async function main() {
   const db = await initDb();
+  await ensureProductImages(db);
 
   const PORT = Number(process.env.PORT) || 3000;
   const apiRoutes = createApiRoutes(db);

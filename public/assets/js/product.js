@@ -616,20 +616,18 @@
 
     (async () => {
       let product = null;
-      // Store settings (WhatsApp number, etc.)
-      try {
-        const s = await fetchJson('/api/settings');
-        if (s && s.whatsapp) {
-          let num = String(s.whatsapp).trim();
-          num = num.replace(/[^\d]/g, '').replace(/^00/, '');
-          waNumber = num;
-        }
-      } catch (e) { /* keep default */ }
-      // Primary source: the live API (works even if the shared catalog/JS is stale)
-      try {
-        const j = await fetchJson('/api/products?id=' + id);
-        if (j && j.id) product = j;
-      } catch (e) { /* fall through */ }
+      // Store settings (WhatsApp number, etc.) + product data in parallel
+      const [sRes, jRes] = await Promise.all([
+        fetchJson('/api/settings').catch(() => null),
+        fetchJson('/api/products?id=' + id).catch(() => null),
+      ]);
+      const s = sRes;
+      if (s && s.whatsapp) {
+        let num = String(s.whatsapp).trim();
+        num = num.replace(/[^\d]/g, '').replace(/^00/, '');
+        waNumber = num;
+      }
+      if (jRes && jRes.id) product = jRes;
       // Fallback: shared catalog (seed / offline)
       if (!product && window.NovaStore) {
         product = window.NovaStore.catalog.find((p) => p.id === id) || null;
