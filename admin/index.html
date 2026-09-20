@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>لوحة تحكم NOVA</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23008060'/%3E%3Ctext x='16' y='22' font-family='Arial' font-size='18' font-weight='800' fill='white' text-anchor='middle'%3EN%3C/text%3E%3C/svg%3E" />
+  <meta name="description" content="لوحة تحكم المتجر — إحصائيات، منتجات، طلبات، عملاء وإعدادات." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/admin/assets/css/admin.css?v=18" />
+</head>
+<body>
+  <div class="app" id="app">
+    <!-- ===================== SIDEBAR ===================== -->
+    <aside class="sidebar" id="sidebar">
+      <div class="side-head">
+        <a href="/admin" class="side-logo"><span class="logo-mark">N</span> NOVA</a>
+        <button class="side-close" id="side-close" aria-label="إغلاق">&times;</button>
+      </div>
+
+      <nav class="side-nav" aria-label="التنقل الرئيسي">
+        <a class="nav-item active" data-view="overview" href="#overview">
+          <span class="nav-ic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/></svg>
+          </span>
+          لوحة التحكم
+        </a>
+        <a class="nav-item" data-view="analytics" href="#analytics">
+          <span class="nav-ic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M7 17V9M12 17V5M17 17v-6"/></svg>
+          </span>
+          الإحصائيات
+        </a>
+        <a class="nav-item" data-view="products" href="#products">
+          <span class="nav-ic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5 12 4l8 4.5v7L12 20l-8-4.5v-7Z"/><path d="M4 8.5 12 13l8-4.5"/><path d="M12 13v7"/></svg>
+          </span>
+          المنتجات
+        </a>
+        <a class="nav-item" data-view="orders" href="#orders">
+          <span class="nav-ic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l-1.2 12.2a1.5 1.5 0 0 1-1.5 1.3H8.7a1.5 1.5 0 0 1-1.5-1.3L6 7Z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>
+          </span>
+          الطلبات
+          <span class="badge" id="orders-badge">0</span>
+        </a>
+        <a class="nav-item" data-view="excel" href="#excel">
+          <span class="nav-ic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/><path d="m10 8-2 3 2 3M14 8l2 3-2 3"/></svg>
+          </span>
+          اكسل
+        </a>
+        <a class="nav-item" data-view="settings" href="#settings">
+          <span class="nav-ic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+          </span>
+          الإعدادات
+        </a>
+      </nav>
+
+      <div class="side-foot">
+        <a class="nav-item plain" href="/" target="_blank">
+          <span class="nav-ic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 19h16"/></svg>
+          </span>
+          عرض المتجر
+        </a>
+        <div class="side-user">
+          <span class="avatar">م</span>
+          <div class="side-user-text"><strong>مدير المتجر</strong><small id="side-user-code">…</small></div>
+        </div>
+        <button class="nav-item plain" id="logout-btn">
+          <span class="nav-ic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
+          </span>
+          تسجيل الخروج
+        </button>
+      </div>
+    </aside>
+    <div class="overlay" id="overlay"></div>
+
+    <!-- ===================== MAIN ===================== -->
+    <div class="main">
+      <header class="topbar">
+        <button class="icon-btn menu-btn" id="menu-btn" aria-label="القائمة">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+        <div class="top-title">لوحة التحكم</div>
+        <div class="top-actions">
+          <div class="period">اليوم</div>
+          <button class="icon-btn" aria-label="الإشعارات">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+            <span class="dot-n" id="notif-dot"></span>
+          </button>
+          <button class="icon-btn" aria-label="الإعدادات">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <main class="content" id="content">
+        <!-- Views are injected here by admin.js -->
+      </main>
+    </div>
+  </div>
+
+  <script src="/admin/assets/js/admin.js?v=30"></script>
+  <script>
+    (function () {
+      var btn = document.getElementById('logout-btn');
+      if (btn) {
+        btn.addEventListener('click', function () {
+          fetch('/api/auth/logout', { method: 'POST' }).catch(function () {}).then(function () {
+            location.href = '/admin/login';
+          });
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

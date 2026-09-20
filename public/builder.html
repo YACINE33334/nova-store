@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Constructor de páginas — NOVA</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23121212'/%3E%3Ctext x='16' y='22' font-family='Arial' font-size='18' font-weight='800' fill='white' text-anchor='middle'%3EN%3C/text%3E%3C/svg%3E" />
+  <meta name="description" content="Compón y edita páginas de destino con el constructor modular de páginas de NOVA." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/css/base.css?v=5" />
+  <link rel="stylesheet" href="/assets/css/store.css?v=10" />
+  <link rel="stylesheet" href="/assets/css/builder.css?v=5" />
+</head>
+<body>
+  <div class="announce">Constructor de páginas de NOVA &middot; compón páginas de destino limpias</div>
+
+  <div class="builder-layout">
+    <!-- Sidebar: section library + actions -->
+    <aside class="b-sidebar">
+      <a href="/" class="logo"><span class="logo-mark">N</span> NOVA<b>Builder</b></a>
+      <p class="b-hint">Añade secciones abajo para componer tu página de destino. Sin arrastrar: añade, reordena y elimina.</p>
+
+      <div class="b-group-label">Añadir sección</div>
+      <div class="b-add-list">
+        <button class="b-add" data-add-section="hero"><span class="b-add-ic">&#9636;</span> Portada</button>
+        <button class="b-add" data-add-section="features"><span class="b-add-ic">&#9776;</span> Características</button>
+        <button class="b-add" data-add-section="products"><span class="b-add-ic">&#9634;</span> Productos</button>
+        <button class="b-add" data-add-section="stats"><span class="b-add-ic">&#9878;</span> Estadísticas</button>
+        <button class="b-add" data-add-section="testimonials"><span class="b-add-ic">&#9733;</span> Testimonios</button>
+        <button class="b-add" data-add-section="cta"><span class="b-add-ic">&#9654;</span> Llamada a la acción</button>
+      </div>
+
+      <div class="b-group-label">Acciones</div>
+      <div class="b-actions">
+        <button class="b-action b-reset" id="b-reset">Restablecer valores</button>
+        <a class="b-action b-link" href="/">Ver la tienda &rarr;</a>
+      </div>
+
+      <div class="b-section-list" id="b-section-list">
+        <div class="b-group-label">Página actual</div>
+      </div>
+    </aside>
+
+    <!-- Preview canvas -->
+    <main class="b-canvas">
+      <div class="b-toolbar">
+        <div class="b-toolbar-title">Vista previa de la página</div>
+        <button class="btn btn-accent btn-sm" id="b-publish">Publicar</button>
+      </div>
+      <div class="b-canvas-scroll">
+        <div id="landing-root"></div>
+      </div>
+      <div class="b-toast" id="b-toast">Guardado</div>
+    </main>
+  </div>
+
+  <script src="/assets/js/store.js?v=9"></script>
+  <script src="/assets/js/builder.js?v=6"></script>
+</body>
+</html>

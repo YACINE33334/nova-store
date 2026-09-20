@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>تسجيل الدخول — NOVA</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23008060'/%3E%3Ctext x='16' y='22' font-family='Arial' font-size='18' font-weight='800' fill='white' text-anchor='middle'%3EN%3C/text%3E%3C/svg%3E" />
+  <meta name="description" content="تسجيل الدخول إلى لوحة تحكم المتجر." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/admin/assets/css/admin.css?v=12" />
+</head>
+<body class="login-page">
+  <div class="login-shell">
+
+    <!-- Brand half: store name + visual -->
+    <div class="login-aside">
+      <div class="login-aside-head">
+        <span class="login-mark">N</span>
+        <span class="login-name" id="brand-name">NOVA</span>
+      </div>
+      <div class="login-aside-body">
+        <h2>كل تجارتك.<br />في مكان واحد أنيق.</h2>
+        <p>المنتجات، الطلبات والإحصائيات من لوحة تحكم واضحة، مصممة لتهتم بأدق التفاصيل.</p>
+        <div class="login-visual" aria-hidden="true">
+          <svg viewBox="0 0 320 210" fill="none">
+            <rect x="18" y="18" width="284" height="174" rx="16" fill="#ffffff" opacity="0.96"/>
+            <rect x="34" y="36" width="10" height="10" rx="3" fill="#e9ecec"/>
+            <rect x="50" y="36" width="10" height="10" rx="3" fill="#e9ecec"/>
+            <rect x="66" y="36" width="10" height="10" rx="3" fill="#d1e6dd"/>
+            <rect x="252" y="36" width="34" height="12" rx="6" fill="#0b3d2e"/>
+            <rect x="34" y="64" width="74" height="14" rx="7" fill="#0f5d45"/>
+            <rect x="34" y="86" width="110" height="9" rx="4.5" fill="#e7eceb"/>
+            <rect x="34" y="102" width="92" height="9" rx="4.5" fill="#e7eceb"/>
+            <rect x="34" y="132" width="64" height="42" rx="10" fill="#f4f8f6"/>
+            <rect x="108" y="132" width="64" height="42" rx="10" fill="#f4f8f6"/>
+            <rect x="182" y="132" width="34" height="42" rx="10" fill="#e3f1ec"/>
+            <path d="M34 164 52 148l14 12 16-18 22 28H34Z" fill="#cdeee3"/>
+            <circle cx="44" cy="116" r="3" fill="#47b38f"/>
+            <rect x="92" y="116" width="42" height="7" rx="3.5" fill="#dfece7"/>
+            <rect x="214" y="64" width="72" height="40" rx="10" fill="#f8f2e4"/>
+            <path d="M232 96c0-8 8-8 8-16s8-8 8-16c0 8 8 8 8 16s8 8 8 16Z" fill="#e6a700"/>
+            <rect x="222" y="112" width="56" height="6" rx="3" fill="#f0ead6"/>
+          </svg>
+        </div>
+      </div>
+      <div class="login-aside-foot">NOVA — لوحة تحكم المتجر &middot; 2026</div>
+    </div>
+
+    <!-- Form half -->
+    <div class="login-main">
+      <div class="login-card">
+        <h1 class="login-title" id="login-title">تسجيل الدخول</h1>
+        <p class="login-sub" id="login-sub">أدخل كود الدخول وكلمة السر الخاصة بالمتجر.</p>
+
+        <form id="login-form" novalidate>
+          <label class="login-field">
+            <span>كود الدخول</span>
+            <input id="lg-code" name="code" type="text" autocomplete="username" required />
+          </label>
+          <label class="login-field">
+            <span>كلمة السر</span>
+            <input id="lg-pass" name="password" type="password" autocomplete="current-password" placeholder="••••••••" required />
+          </label>
+          <label class="login-field" id="lg-pass2-wrap" style="display:none">
+            <span>تأكيد كلمة السر</span>
+            <input id="lg-pass2" name="password2" type="password" autocomplete="new-password" placeholder="••••••••" required />
+          </label>
+          <p class="login-error" id="login-error"></p>
+          <button type="submit" class="login-btn" id="login-btn">تسجيل الدخول</button>
+        </form>
+
+        <p class="login-foot">
+          <a href="/">العودة إلى المتجر</a>
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/admin/assets/js/login.js?v=1"></script>
+</body>
+</html>

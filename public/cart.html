@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Carrito — NOVA</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23121212'/%3E%3Ctext x='16' y='22' font-family='Arial' font-size='18' font-weight='800' fill='white' text-anchor='middle'%3EN%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/css/base.css?v=5" />
+  <link rel="stylesheet" href="/assets/css/store.css?v=10" />
+  <link rel="stylesheet" href="/assets/css/cart.css?v=7" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="/" class="logo"><span class="logo-mark">N</span> NOVA</a>
+      <nav class="main-nav" aria-label="Navegación principal">
+        <ul>
+          <li><a href="/">Inicio</a></li>
+          <li><a href="/#products">Tienda</a></li>
+          <li><a href="/builder.html">Constructor</a></li>
+          <li><a href="/admin">Admin</a></li>
+        </ul>
+      </nav>
+      <div class="header-actions">
+        <button class="icon-btn nav-toggle" aria-label="Menú" aria-expanded="false">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container cart-page">
+    <h1 class="cart-title">Tu carrito</h1>
+    <div class="cart-layout">
+      <div class="cart-items" id="cart-items"></div>
+      <aside class="cart-summary">
+        <h3>Resumen del pedido</h3>
+        <div class="sum-row"><span>Subtotal</span><span id="sum-subtotal">$0</span></div>
+        <div class="sum-row"><span>Envío</span><span id="sum-shipping">Gratis</span></div>
+        <div class="sum-row sum-total"><span>Total</span><span id="sum-total">$0</span></div>
+        <button class="btn btn-accent btn-block" id="checkout">Finalizar compra</button>
+        <p class="sum-note">Pago de prueba — no se procesa ningún pago real.</p>
+      </aside>
+    </div>
+    <div class="cart-empty" id="cart-empty">
+      <p>Tu carrito está vacío.</p>
+      <a class="btn btn-accent" href="/#products">Ver la colección</a>
+    </div>
+  </main>
+
+  <div class="cart-sticky" id="cart-sticky">
+    <div class="cart-sticky-inner">
+      <div class="cart-sticky-total">
+        <span>Total</span>
+        <strong id="sticky-total">$0</strong>
+      </div>
+      <button class="btn btn-accent btn-lg cart-sticky-btn" id="checkout-sticky">Finalizar compra</button>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container footer-bottom">
+      <div>&copy; <span data-year></span> NOVA. Todos los derechos reservados.</div>
+      <div class="footer-actions"><a href="#">Privacidad</a><a href="#">Términos</a></div>
+    </div>
+  </footer>
+
+  <script src="/assets/js/store.js?v=9"></script>
+  <script src="/assets/js/cart.js?v=7"></script>
+  <script>document.querySelector('[data-year]').textContent = new Date().getFullYear();</script>
+</body>
+</html>

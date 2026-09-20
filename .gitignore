@@ -1,0 +1,21 @@
+# =========================================================
+# Nova — Git ignore
+# =========================================================
+
+# Dependencies
+node_modules/
+
+# Secrets — NEVER commit credentials
+.env
+
+# Runtime data (real orders = PII, admin hash, backups)
+data/
+
+# Uploaded media (served locally; keep out of the repo)
+public/assets/img/uploads/
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
