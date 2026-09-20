@@ -607,6 +607,12 @@ async function main() {
   const server = http.createServer((req, res) => {
     const urlPath = decodeURIComponent(req.url.split('?')[0]);
 
+    // Health probe for hosting platforms (Render, Railway, VPS monitors)
+    if (urlPath === '/healthz' && (req.method === 'GET' || req.method === 'HEAD')) {
+      sendJson(res, 200, { ok: true, db: db.backend });
+      return;
+    }
+
     // API routes short-circuit before static serving
     if (urlPath.startsWith('/api/')) {
       apiRoutes(req, res, urlPath).then((handled) => {
