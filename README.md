@@ -1,99 +1,97 @@
 # NOVA — E-commerce & Landing Page Builder
 
-A clean, minimalist, European-style e-commerce and landing page builder platform with a fully separated Arabic RTL admin dashboard. Zero build step, zero dependencies — pure HTML/CSS/JS with a lightweight Node static server.
+A clean, minimalist, European-style e-commerce and landing page builder with a fully separated **Arabic RTL** admin dashboard. Pure HTML/CSS/JS frontend (no build step) served by a lightweight Node backend.
 
-Products and their landing pages are stored in `data/products.json` and managed through a small JSON API (`/api/products`) served by the same Node server — create, edit, publish/hide and delete products from the admin and the storefront updates instantly.
+The backend is the only thing that touches the database, and the database layer is **portable**: point `DATABASE_URL` at PostgreSQL (Supabase, Neon, RDS, VPS…) and everything runs on it; leave it empty and it falls back to the built-in JSON-file backend.
 
-## Quick start
-
-```bash
-npm start          # or: node server/server.js
+```
+Storefront / Admin  →  Backend API (Node, :3200)  →  Database Layer  →  PostgreSQL / Supabase
 ```
 
-Then open:
+## Features
 
-| URL           | Purpose                                          |
-| ------------- | ------------------------------------------------ |
-| `http://localhost:3000/`        | Public storefront (home / landing page) |
-| `http://localhost:3000/product.html?id=1` | Per-product landing page |
-| `http://localhost:3000/builder.html` | Landing page builder (compose & edit sections) |
-| `http://localhost:3000/cart.html`     | Cart & checkout demo |
-| `http://localhost:3000/admin`    | Admin dashboard (Arabic, full RTL) |
+- **Storefront** — hero, feature grid, product grid, showcase, testimonials, newsletter; product catalog served live from the API.
+- **Per-product landing pages** (`/product.html?id=N`) — media, rating, price, stock, quantity + buy button, features, shipping strip, related products.
+- **Landing page builder** (`/builder.html`) — compose heart/feature/stats/testimonial/CTA sections live.
+- **Admin dashboard** (`/admin`, Arabic RTL) — products, orders, customers, settings, analytics; order status management; checkout translations (`/api/i18n`).
+- **Images live inside the database** — `/api/upload` embeds images as base64 data-URLs into the product JSON stored in PostgreSQL. Nothing is written to the server disk, so media survives any environment.
+- **Portable DB layer** — schema migrations, seeding and backup/export tooling for PostgreSQL; identical JSON fallback.
+
+## Quick start (local)
+
+```bash
+npm install
+# optional: copy the Supabase/Postgres connection string into .env
+#   DATABASE_URL=postgresql://user:pass@host:5432/postgres?sslmode=require
+npm run db:migrate      # create schema (only when using PostgreSQL)
+npm run db:seed         # import local data/ files into the database
+npm start               # node server/server.js  (port 3200, or $PORT)
+```
+
+Open:
+
+| URL | Purpose |
+| --- | --- |
+| `http://localhost:3200/` | Public storefront |
+| `http://localhost:3200/product.html?id=1` | Per-product landing page |
+| `http://localhost:3200/admin/login` | Admin login (setup creates the account once) |
+| `http://localhost:3200/healthz` | Health probe (`{"ok":true,"db":"postgres"}`) |
+
+## Deployment (Render)
+
+This repo ships a [render.yaml](./render.yaml) blueprint — in Render: **New + → Blueprint → `nova-store`**, set the `DATABASE_URL` environment variable (secret) to your Supabase pooler URL, deploy. Health check path: `/healthz`. Custom domains are supported from the Render service settings.
+
+> The public instance sleeps after 15 minutes of inactivity on the free plan (first visit after sleep takes ~1 min).
 
 ## Structure
 
 ```
-project-nova/
 ├── server/
-│   ├── server.js      # Static server + JSON API (/api/products) + /admin
-│   ├── test.js        # Route smoke tests (node server/test.js)
-│   └── validate.js    # Asset/ID reference checks (node server/validate.js)
-├── data/
-│   └── products.json  # Live product catalog + per-product landing content
-├── public/            # Storefront
-│   ├── index.html     # Home / landing page
-│   ├── builder.html   # Page builder workspace
-│   ├── product.html   # Per-product landing page (rendered by product.js)
-│   ├── cart.html      # Cart page
-│   └── assets/
-│       ├── css/       # base.css (design tokens), store.css, product.css, builder.css, cart.css
-│       └── js/        # store.js, product.js, builder.js, cart.js
-└── admin/             # Admin dashboard (SPA, RTL Arabic)
-    ├── index.html
-    ├── product-editor.html  # Landing-page editor for one product
-    └── assets/
-        ├── css/       # admin.css, editor.css
-        └── js/        # admin.js, editor.js
+│   ├── server.js          # HTTP server: static assets + JSON API + auth sessions
+│   ├── db/
+│   │   ├── index.js       # DB layer: env loading + backend selection
+│   │   ├── json.js        # JSON-file backend (fallback)
+│   │   ├── postgres.js    # PostgreSQL adapter (pg, jsonb document columns)
+│   │   ├── migrations/0001_init.sql
+│   │   ├── migrate.js     # npm run db:migrate
+│   │   ├── seed.js        # npm run db:seed  (import data/*.json)
+│   │   └── backup.js      # npm run db:backup / db:export (JSON + SQL dump)
+│   ├── test.js            # route smoke tests
+│   └── validate.js        # asset & DOM id reference checks
+├── public/                # Storefront (HTML/CSS/JS)
+├── admin/                 # Admin dashboard (Arabic RTL SPA)
+├── data/                  # Seed source files (not committed; store data lives in the DB)
+└── render.yaml            # Render blueprint
 ```
 
-## API
+## API (same-origin JSON)
 
-| Method | Endpoint            | Description                                  |
-| ------ | ------------------- | -------------------------------------------- |
-| GET    | `/api/products`     | List all products (with landing content)     |
-| GET    | `/api/products?id=N`| Get a single product                         |
-| POST   | `/api/products`     | Create (no `id`) or update (with `id`) a product; generated `id` and a default landing page for new products |
-| DELETE | `/api/products?id=N`| Delete a product                             |
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| GET | `/api/products` | List products (or `?id=N` single) |
+| POST | `/api/products` | Create / update (auth) |
+| DELETE | `/api/products?id=N` | Delete (auth) |
+| GET/POST | `/api/orders` | Order list (auth) / draft & submit from checkout |
+| PUT | `/api/orders` | Batch status updates (auth) |
+| POST | `/api/upload` | Image → base64 data-URL stored in the DB (auth) |
+| GET/POST | `/api/settings`, `/api/i18n` | Store settings / checkout translations (write = auth) |
+| POST | `/api/auth/setup` · `/api/auth/login` · `/api/auth/logout` | Admin auth (sessions via HTTP-only cookie) |
+| GET | `/api/auth/status` · `/api/auth/me` | Session state |
+| GET | `/healthz` | Health probe for hosting platforms |
 
-## Features
+## Database scripts
 
-### Storefront
-- High-contrast minimalist hero, feature grid, product grid, showcase, testimonials, newsletter.
-- Product catalog is served from `/api/products` (with a built-in fallback catalog), so products added in the admin appear in the storefront immediately.
-- Cart page with quantity controls and order summary.
-- Per-product landing page (`/product.html?id=<n>`): a clean European design with product media, rating, price, stock, quantity + buy button, feature list, shipping strip and related products.
-
-### Product & landing-page management (`/admin#products`)
-- **إضافة منتج** — a modal creates a product and automatically generates a ready landing page (image/visual, title, description, buy button) in the same European style.
-- Per product row:
-  - **توليد** — (re)generates a default landing page and opens the storefront preview.
-  - **معاينة** — opens the landing page exactly as a customer sees it (`/product.html?id=N`, new tab).
-  - **تعديل** — opens `/admin/product-editor.html?id=N`: edit name, price, sale price, badge, stock, color, description, features, headline, promo line, buy-button text/link, and a "معروض على المتجر" switch; live preview + save persists to `data/products.json`.
-  - **نسخ** — copies the landing page link.
-  - **حذف** — deletes the product (with confirmation).
-- Products with `landing.active = false` are hidden from the storefront grid (direct links still resolve).
-- Everything persists to `data/products.json` — no more `localStorage` edits.
-
-### Landing page builder (`/builder.html`)
-- Modular sections: Hero, Features, Products, Stats, Testimonials, CTA.
-- Sidebar `NovaBuilder` API to add / reorder / remove / reset sections live.
-- Preview canvas renders the composed page; state persists to `localStorage`.
-
-### Admin dashboard (`/admin`)
-- Fully separated SPA, Arabic and RTL (language `ar`, `dir="rtl"`).
-- Clean white surfaces, soft gray containers, deep-blue (`#0a6cff`) accents.
-- Sidebar: لوحة التحكم (Overview), الإحصائيات (Analytics), المنتجات (Products), الطلبات (Orders + badge counter), العملاء (Customers), الإعدادات (Settings).
-- Overview metric cards: إجمالي الزوار، إجمالي الطلبات، إجمالي الإيرادات، معدل التحويل، متوسط قيمة الطلب، العملاء الجدد.
-- Interactive map section with city markers and an interactive city list.
-- Revenue line chart, donut (sales channels), visitors bar chart — all hand-drawn SVG (no chart library).
-- Orders / Products / Customers tabs, search, filters; Settings panels (general, payments, shipping, storefront).
-- Responsive; drawer sidebar and mobile nav on small screens.
+```bash
+npm run db:migrate   # apply migrations (PostgreSQL)
+npm run db:seed      # seed from data/*.json if missing
+npm run db:backup    # snapshot to data/backups (JSON + portable SQL)
+npm run db:export    # same, into ./data/backups
+```
 
 ## Tests
 
 ```bash
-node server/test.js       # route smoke tests
-node server/validate.js   # asset & DOM id reference checks
+node server/test.js
+node server/validate.js
+node --check <file>
 ```
-
-`node --check <file>` can be used to syntax-check any JS file.
