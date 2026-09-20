@@ -12,18 +12,31 @@
     if (!res.ok) throw new Error('HTTP ' + res.status);
     return res.json();
   }
-  async function apiSaveProduct(p) {
-    const res = await fetch('/api/products', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(p),
-    });
-    if (!res.ok) {
-      let msg = 'HTTP ' + res.status;
-      try { const t = await res.json(); if (t && t.error) msg = t.error; } catch (e) { /* ignore */ }
-      throw new Error(msg);
+  async function apiSaveProduct(p, retried) {
+    try {
+      const res = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(p),
+      });
+      if (!res.ok) {
+        let msg = 'HTTP ' + res.status;
+        try { const t = await res.json(); if (t && t.error) msg = t.error; } catch (e) { /* ignore */ }
+        // Cloud hosts return 502/503/504 while a free-tier service wakes up — retry once.
+        if (!retried && (res.status === 502 || res.status === 503 || res.status === 504)) {
+          await new Promise((r) => setTimeout(r, 2500));
+          return apiSaveProduct(p, true);
+        }
+        throw new Error(msg);
+      }
+      return res.json();
+    } catch (e) {
+      if (!retried && e instanceof TypeError) {
+        await new Promise((r) => setTimeout(r, 2500));
+        return apiSaveProduct(p, true);
+      }
+      throw e;
     }
-    return res.json();
   }
 
   function esc(s) {

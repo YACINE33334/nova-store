@@ -2,6 +2,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const zlib = require('zlib');
 const { initDb } = require('./db');
 
 const ROOT = path.join(__dirname, '..');
@@ -77,8 +78,31 @@ function clearSession(res) {
 }
 
 function sendJson(res, status, payload) {
+  const raw = JSON.stringify(payload);
+  const enc = pickEncoding(res);
+  if (enc) {
+    res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Content-Encoding': enc.name, 'Vary': 'Accept-Encoding' });
+    const stream = enc.create();
+    stream.on('error', () => { if (!res.headersSent) { res.destroy(); } });
+    stream.end(raw);
+    stream.pipe(res);
+    return;
+  }
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(payload));
+  res.end(raw);
+}
+
+/* gzip/brotli for browsers that accept it; identity otherwise. */
+function pickEncoding(res) {
+  const req = res.req;
+  const accept = String((req && req.headers['accept-encoding']) || '').toLowerCase();
+  if (accept.indexOf('br') !== -1) {
+    return { name: 'br', create: () => zlib.createBrotliCompress({ params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 4 } }) };
+  }
+  if (accept.indexOf('gzip') !== -1 || accept.indexOf('deflate') !== -1) {
+    return { name: 'gzip', create: () => zlib.createGzip({ level: 6 }) };
+  }
+  return null;
 }
 
 function readJsonBody(req) {
@@ -86,8 +110,8 @@ function readJsonBody(req) {
     let data = '';
     req.on('data', (chunk) => {
       data += chunk;
-      if (data.length > 2e6) {
-        reject(Object.assign(new Error('Payload too large'), { status: 400 }));
+      if (data.length > 24e6) {
+        reject(Object.assign(new Error('Payload too large (max 24 MB)'), { status: 400 }));
         req.destroy();
       }
     });
@@ -162,12 +186,33 @@ function createApiRoutes(db) {
     // GET /api/products  |  GET /api/products?id=N
     if (urlPath === '/api/products' && (method === 'GET' || method === 'HEAD')) {
       if (method === 'HEAD') { res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(); return true; }
-      const id = Number(req.url.split('?')[1] ? new URLSearchParams(req.url.split('?')[1]).get('id') : NaN);
-      if (req.url.includes('?') && !Number.isNaN(id)) {
+      const params = new URLSearchParams(req.url.split('?')[1] || '');
+      const idRaw = String(params.get('id') || '').trim();
+      const id = Number(idRaw);
+      const hasId = idRaw !== '' && !Number.isNaN(id);
+      if (hasId) {
         const p = await db.getProduct(id);
         sendJson(res, p ? 200 : 404, p || { error: 'Not found' });
       } else {
-        sendJson(res, 200, await db.listProducts());
+        if (params.get('cards') === '1') {
+          const list = await db.listProducts();
+          sendJson(res, 200, list.map((p) => ({
+            id: p.id,
+            name: p.name,
+            cat: p.cat,
+            price: p.price,
+            old: p.old,
+            hue: p.hue,
+            tag: p.tag,
+            stock: p.stock,
+            desc: p.desc,
+            reviews: p.reviews,
+            active: (p.landing || {}).active !== false,
+            images: Array.isArray(p.images) ? p.images.slice(0, 1) : []
+          })));
+        } else {
+          sendJson(res, 200, await db.listProducts());
+        }
       }
       return true;
     }
@@ -582,19 +627,30 @@ function serveStatic(req, res) {
       res.end('404 Not Found');
       return;
     }
-    const ext = path.extname(filePath).toLowerCase();
-    const contentType = MIME[ext] || 'application/octet-stream';
-    const mtime = stats.mtime.toUTCString();
+const ext = path.extname(filePath).toLowerCase();
+  const contentType = MIME[ext] || 'application/octet-stream';
+  const mtime = stats.mtime.toUTCString();
 
-    if (req.headers['if-modified-since'] === mtime) {
-      res.writeHead(304, { 'Cache-Control': 'no-cache', 'Last-Modified': mtime });
-      res.end();
-      return;
-    }
+  if (req.headers['if-modified-since'] === mtime) {
+    res.writeHead(304, { 'Cache-Control': 'no-cache', 'Last-Modified': mtime });
+    res.end();
+    return;
+  }
 
-    cacheControl(filePath, res);
-    res.writeHead(200, { 'Content-Type': contentType });
-    fs.createReadStream(filePath).pipe(res);
+  const COMPRESSIBLE_EXT = { '.html': 1, '.css': 1, '.js': 1, '.mjs': 1, '.json': 1, '.txt': 1, '.xml': 1, '.svg': 1, '.map': 1, '.webmanifest': 1, '.md': 1 };
+  cacheControl(filePath, res);
+
+  const enc = COMPRESSIBLE_EXT[ext] ? pickEncoding(res) : null;
+  if (enc) {
+    res.writeHead(200, { 'Content-Type': contentType, 'Content-Encoding': enc.name, 'Vary': 'Accept-Encoding' });
+    const stream = enc.create();
+    stream.on('error', () => { if (!res.headersSent) { res.destroy(); } });
+    fs.createReadStream(filePath).pipe(stream).pipe(res);
+    return;
+  }
+
+  res.writeHead(200, { 'Content-Type': contentType });
+  fs.createReadStream(filePath).pipe(res);
   });
 }
 

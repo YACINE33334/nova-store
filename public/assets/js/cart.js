@@ -6,19 +6,6 @@
 
   const CART_KEY = 'nova_cart';
 
-  const catalog = [
-    { id: 1, name: 'Camisa de lino Aurelia', cat: 'Ropa', price: 78, hue: '#e7ecf3' },
-    { id: 2, name: 'Abrigo de lana Meridian', cat: 'Prendas exteriores', price: 240, hue: '#ece8df' },
-    { id: 3, name: 'Taza de cerámica Oslo', cat: 'Hogar', price: 32, hue: '#e5ece9' },
-    { id: 4, name: 'Butaca de descanso Nordic', cat: 'Mobiliario', price: 420, hue: '#f0e6dd' },
-    { id: 5, name: 'Foulard de seda — Folia', cat: 'Accesorios', price: 54, hue: '#e3e4ee' },
-    { id: 6, name: 'Terraplanter X', cat: 'Hogar', price: 46, hue: '#e6ede4' },
-    { id: 7, name: 'Lámpara de mesa Vela', cat: 'Iluminación', price: 130, hue: '#f1e9e0' },
-    { id: 8, name: 'Bolso de piel Strada', cat: 'Accesorios', price: 190, hue: '#e6e3dc' },
-    { id: 10, name: 'Hervidor Inteligente de Alimentos', cat: 'Electrodomesticos', price: 89, hue: '#f0f0f0' }
-  ];
-  const product = (id) => catalog.find((p) => p.id === id);
-
   const fmt = (n) => '$' + n.toLocaleString('en-US');
 
   const getCart = () => {
@@ -31,9 +18,9 @@
     const page = document.querySelector('.cart-page');
     const itemsEl = document.getElementById('cart-items');
     const stickyEl = document.getElementById('cart-sticky');
-    const liveCatalog = () => (window.NovaStore && window.NovaStore.catalog && window.NovaStore.catalog.length)
+    const liveCatalog = () => (window.NovaStore && window.NovaStore.catalog)
       ? window.NovaStore.catalog
-      : catalog;
+      : [];
     const product = (id) => liveCatalog().find((p) => p.id === id);
     let cart = getCart();
 
@@ -47,6 +34,13 @@
       page.classList.add('has-items');
       page.classList.remove('empty');
       stickyEl.style.display = 'block';
+
+      const cat = liveCatalog();
+      if (!cat.length) {
+        itemsEl.innerHTML = '<div class="cart-loading" style="text-align:center;color:#8a8a8a;padding:32px 0;font-size:14px">Cargando productos…</div>';
+        return;
+      }
+      const product = (id) => cat.find((p) => p.id === id);
 
       itemsEl.innerHTML = cart.map((it) => {
         const p = product(it.id);

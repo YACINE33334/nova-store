@@ -116,19 +116,9 @@
   const visitorsSeries = [4200, 5100, 4800, 6200, 5500, 7400, 6900, 8200, 7900, 9100, 8800, 10400];
   const monthsLabels = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
 
-  const seedOrders = [
-    { id: '#10284', customer: 'ليلى الموسى', email: 'laila@sample.com', date: '5 سبتمبر', total: 289.0, status: 'paid', items: 3 },
-    { id: '#10283', customer: 'أحمد الشمري', email: 'ahmed@sample.com', date: '5 سبتمبر', total: 74.05, status: 'pending', items: 1 },
-    { id: '#10282', customer: 'سارة النعيمي', email: 'sara@sample.com', date: '4 سبتمبر', total: 512.0, status: 'processing', items: 4 },
-    { id: '#10281', customer: 'عمر الحسني', email: 'omar@sample.com', date: '4 سبتمبر', total: 130.0, status: 'paid', items: 2 },
-    { id: '#10280', customer: 'نورة القحطاني', email: 'noura@sample.com', date: '3 سبتمبر', total: 46.0, status: 'cancelled', items: 1 },
-    { id: '#10279', customer: 'خالد العتيبي', email: 'khaled@sample.com', date: '3 سبتمبر', total: 358.0, status: 'paid', items: 5 },
-    { id: '#10278', customer: 'ريم الدوسري', email: 'reem@sample.com', date: '2 سبتمبر', total: 104.0, status: 'refunded', items: 2 },
-    { id: '#10277', customer: 'فهد العنزي', email: 'fahad@sample.com', date: '2 سبتمبر', total: 190.0, status: 'delivered', items: 2 },
-  ];
   let liveOrders = [];
-  function allOrders() { return liveOrders.concat(seedOrders); }
-  const pendingOrdersCount = () => allOrders().filter((o) => o.status === 'pending' || o.status === 'processing').length;
+  function allOrders() { return liveOrders; }
+  const pendingOrdersCount = () => liveOrders.filter((o) => o.status === 'pending' || o.status === 'processing').length;
 
   const pad2 = (n) => String(n).padStart(2, '0');
   function fmtOrderDate(o) {
@@ -149,24 +139,28 @@
   }
 
   /* ---------------- Live product store (from /api/products) ---------------- */
-  const productSeed = [
-    { id: 1, name: 'Aurelia Linen Shirt', sku: 'AP-1201', sold: 84, hue: '#e7ecf3' },
-    { id: 2, name: 'Meridian Wool Coat', sku: 'OW-32', sold: 61, hue: '#ece8df' },
-    { id: 3, name: 'Oslo Ceramic Mug', sku: 'HM-11', sold: 210, hue: '#e5ece9' },
-    { id: 4, name: 'Nordic Lounge Chair', sku: 'FN-08', sold: 27, hue: '#f0e6dd' },
-    { id: 5, name: 'Silk Scarf — Folia', sku: 'AC-45', sold: 132, hue: '#e3e4ee' },
-    { id: 6, name: 'Terraplanter X', sku: 'HM-19', sold: 55, hue: '#e6ede4' },
-    { id: 7, name: 'Vela Table Lamp', sku: 'LT-03', sold: 41, hue: '#f1e9e0' },
-    { id: 8, name: 'Strada Leather Tote', sku: 'AC-51', sold: 19, hue: '#e6e3dc' },
-  ];
+  let productStore = [];
+  let productsLoading = true;
 
-  let productStore = productSeed.slice();
-
-  async function apiFetch(url, opts) {
-    const res = await fetch(url, opts);
+  async function apiFetch(url, opts, retried) {
+    let res;
+    try {
+      res = await fetch(url, opts);
+    } catch (e) {
+      if (!retried) {
+        await new Promise((r) => setTimeout(r, 2000));
+        return apiFetch(url, opts, true);
+      }
+      throw e;
+    }
     if (!res.ok) {
       let msg = 'HTTP ' + res.status;
       try { const t = await res.json(); if (t && t.error) msg = t.error; } catch (e) { /* ignore */ }
+      // Free-tier hosts return 502/503/504 while the instance wakes up — retry once.
+      if (!retried && (res.status === 502 || res.status === 503 || res.status === 504)) {
+        await new Promise((r) => setTimeout(r, 2500));
+        return apiFetch(url, opts, true);
+      }
       throw new Error(msg);
     }
     return res.json();
@@ -176,19 +170,17 @@
   const apiDeleteProduct = (id) => apiFetch('/api/products?id=' + id, { method: 'DELETE' });
 
   function toAdminRow(p) {
-    const s = productSeed.find((x) => x.id === Number(p.id)) || {};
-    return Object.assign({ sku: s.sku || 'SKU-' + p.id, sold: s.sold != null ? s.sold : 0 }, p);
+    return Object.assign({ sku: 'SKU-' + p.id, sold: 0 }, p);
   }
 
   async function loadProducts() {
     try {
       const list = await apiProducts();
-      if (Array.isArray(list) && list.length) {
-        productStore = list.map(toAdminRow);
-        const view = getView();
-        if (view === 'products' || view === 'overview') views[view]();
-      }
-    } catch (e) { /* keep the seed store */ }
+      if (Array.isArray(list)) productStore = list.map(toAdminRow);
+    } catch (e) { /* keep whatever is already loaded */ }
+    productsLoading = false;
+    const view = getView();
+    if (view === 'products' || view === 'overview') views[view]();
   }
 
   const cities = [
@@ -431,7 +423,7 @@
         <div class="table-wrap">
           <table class="table">
             <thead><tr><th>رقم الطلب</th><th>العميل</th><th>التاريخ</th><th>المنتجات</th><th>الإجمالي</th><th>الحالة</th></tr></thead>
-            <tbody>${allOrders().slice(0, 6).map(orderRow).join('')}</tbody>
+            <tbody>${allOrders().length ? allOrders().slice(0, 6).map(orderRow).join('') : '<tr><td colspan="6"><div class="empty">لا توجد طلبات بعد</div></td></tr>'}</tbody>
           </table>
         </div>
       </div>
@@ -907,7 +899,7 @@
         return okTab && okSearch;
       });
       if (!list.length) {
-        tb.innerHTML = `<tr><td colspan="7"><div class="empty">لا توجد منتجات مطابقة</div></td></tr>`;
+        tb.innerHTML = `<tr><td colspan="7"><div class="empty">${productsLoading ? 'جارٍ تحميل المنتجات…' : 'لا توجد منتجات مطابقة'}</div></td></tr>`;
         return;
       }
       tb.innerHTML = list.map((p) => `
@@ -1024,7 +1016,7 @@
             </div>
             <div class="modal-body">
               <div class="form-row">
-                <div class="form-group"><label class="form-label">اسم المنتج</label><input class="input" id="pf-name" placeholder="مثال: Aurelia Linen Shirt"></div>
+                <div class="form-group"><label class="form-label">اسم المنتج</label><input class="input" id="pf-name" placeholder="مثال: منتج جديد"></div>
                 <div class="form-group"><label class="form-label">التصنيف</label><input class="input" id="pf-cat" list="pf-cats" placeholder="Apparel, Home ..."><datalist id="pf-cats"><option>Apparel</option><option>Outerwear</option><option>Home</option><option>Furniture</option><option>Accessories</option><option>Lighting</option></datalist></div>
               </div>
               <div class="form-row">

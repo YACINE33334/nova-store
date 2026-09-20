@@ -5,75 +5,11 @@
   'use strict';
 
   /* ---------- Product catalog ---------- */
-  // `seed` is the built-in fallback; the live catalog is loaded from /api/products
-  const seed = [
-    {
-      id: 1, name: 'Camisa de lino Aurelia', cat: 'Ropa', price: 78, old: null, tag: 'new', hue: '#e7ecf3',
-      rating: 4.9, reviews: 214,
-      desc: 'Corte europeo relajado, confeccionado con lino europeo transpirable. La Aurelia está hecha para usarse a diario: suave desde el primer lavado, con la estructura justa para mantener la línea temporada tras temporada.',
-      features: ['Lino europeo 100%', 'Corte relajado con hombro caído', 'Botones de concha natural', 'Lavable a máquina a 30 °C'],
-      stock: 142,
-    },
-    {
-      id: 2, name: 'Abrigo de lana Meridian', cat: 'Prendas exteriores', price: 240, old: 290, tag: 'sale', hue: '#ece8df',
-      rating: 4.8, reviews: 168,
-      desc: 'Abrigo entallado en una mezcla de lana suavemente cepillada. Hombros limpios, una silueta discreta y un drapeado cálido que te acompaña en invierno sin nada de volumen.',
-      features: ['Mezcla de tacto lana cepillada', 'Cuerpo forrado por completo', 'Dos bolsillos de parche', 'Horma europea regular'],
-      stock: 36,
-    },
-    {
-      id: 3, name: 'Taza de cerámica Oslo', cat: 'Hogar', price: 32, old: null, tag: null, hue: '#e5ece9',
-      rating: 4.7, reviews: 342,
-      desc: 'Una taza generosa de 350 ml hecha en gres y terminada con esmalte mate. Perfecta junto a una mañana tranquila, hecha para durar más que las modas.',
-      features: ['Gres de 350 ml', 'Esmalte mate apto para alimentos', 'Apta para lavavajillas y microondas', 'Acabado a mano'],
-      stock: 0,
-    },
-    {
-      id: 4, name: 'Butaca de descanso Nordic', cat: 'Mobiliario', price: 420, old: null, tag: null, hue: '#f0e6dd',
-      rating: 4.9, reviews: 96,
-      desc: 'Una butaca escultórica en roble macizo y cuerda natural. Cuidada desde todos los ángulos, diseñada para años de uso diario.',
-      features: ['Estructura de roble FSC macizo', 'Cuerda natural tejida a mano', 'Piezas planas sin herramientas', 'Envío gratuito'],
-      stock: 12,
-    },
-    {
-      id: 5, name: 'Foulard de seda — Folia', cat: 'Accesorios', price: 54, old: 68, tag: 'sale', hue: '#e3e4ee',
-      rating: 4.8, reviews: 129,
-      desc: 'Un foulard de seda de morera estampado con hojas y dobladillo cosido a mano. Ligero como el aire, estampado en pequeños lotes en Como.',
-      features: ['Seda de morera 100%', 'Cantos cosidos a mano', '90 × 90 cm', 'En caja lista para regalar'],
-      stock: 88,
-    },
-    {
-      id: 6, name: 'Terraplanter X', cat: 'Hogar', price: 46, old: null, tag: 'new', hue: '#e6ede4',
-      rating: 4.6, reviews: 78,
-      desc: 'Una maceta autorriego con depósito de agua visible. Líneas limpias que dejan que tus plantas hablen por sí solas.',
-      features: ['Depósito autorriego', 'Resina reciclada sin BPA', 'Apta para macetas de 4–6"', 'Disponible en tres neutros'],
-      stock: 64,
-    },
-    {
-      id: 7, name: 'Lámpara de mesa Vela', cat: 'Iluminación', price: 130, old: null, tag: null, hue: '#f1e9e0',
-      rating: 4.9, reviews: 187,
-      desc: 'Una lámpara de mesa arquitectónica y suave en cerámica torneada. Luz difusa, sombras delicadas y un interruptor con un clic satisfactorio.',
-      features: ['Base de cerámica torneada', 'Pantalla difusora de tela', 'Regulador en línea', 'Bombilla E27 incluida'],
-      stock: 8,
-    },
-    {
-      id: 8, name: 'Bolso de piel Strada', cat: 'Accesorios', price: 190, old: 220, tag: 'sale', hue: '#e6e3dc',
-      rating: 4.7, reviews: 143,
-      desc: 'Un bolso estructurado en piel vegetal de grano pleno. Espacio de sobra para un portátil y para la vida; la pátina llega con el tiempo.',
-      features: ['Piel vegetal de grano pleno', 'Cabe un portátil de 15"', 'Bolsillo interior con cremallera', 'Hecho en un taller familiar'],
-      stock: 41,
-    },
-    {
-      id: 10, name: 'Hervidor Inteligente de Alimentos', cat: 'Electrodomesticos', price: 89, old: 109, tag: 'sale', hue: '#f0f0f0',
-      rating: 4.7, reviews: 20,
-      desc: 'Hervidor inteligente con control digital de temperatura y temporizador programable. Perfecto para preparar cereales calientes, chocolate, té y más. Diseño compacto y elegante con acabados premium y base giratoria de 360°.',
-      features: ['Control digital de temperatura con pantalla LED', 'Capacidad de 1.7 litros de acero inoxidable', 'Temporizador programable de hasta 24 horas', 'Base giratoria de 360° con cable enrollador', 'Funcion calentar rapida en 3 minutos', 'Diseño compacto y elegante con acabados premium'],
-      stock: 45,
-      images: ['/assets/img/foodwarmer-1.png', '/assets/img/foodwarmer-2.png', '/assets/img/foodwarmer-3.png', '/assets/img/foodwarmer-4.png']
-    },
-  ];
-
-  let catalog = seed.slice();
+  // The catalog is always loaded from /api/products — no built-in demo data.
+  // The grid shows a loading / empty state until the real products arrive.
+  let catalog = [];
+  let catalogReady = false;
+  let catalogError = false;
 
   const format = (n) => '$' + n.toLocaleString('en-US');
 
@@ -152,6 +88,15 @@
   function renderProducts(scope) {
     const grid = scope.querySelector('[data-products]');
     if (!grid) return;
+    if (!catalog.length) {
+      const msg = catalogError
+        ? 'No se pudo cargar el catálogo. Inténtalo de nuevo más tarde.'
+        : catalogReady
+          ? 'No hay productos publicados todavía.'
+          : 'Cargando productos…';
+      grid.innerHTML = `<div class="grid-empty" style="grid-column:1/-1;text-align:center;color:var(--color-ink-muted,#8a8a8a);padding:40px 0;font-size:14px">${msg}</div>`;
+      return;
+    }
     grid.innerHTML = visibleProducts().map(productCard).join('');
   }
 
@@ -172,16 +117,15 @@
 
   async function loadCatalog() {
     try {
-      const res = await fetch('/api/products', { cache: 'no-store' });
+      const res = await fetch('/api/products?cards=1', { cache: 'no-store' });
       if (!res.ok) throw new Error('bad status');
       const data = await res.json();
-      if (Array.isArray(data) && data.length) {
-        catalog = data;
-        rerenderAll();
-      }
+      if (Array.isArray(data)) catalog = data;
     } catch (e) {
-      // keep the built-in seed catalog
+      catalogError = true;
     }
+    catalogReady = true;
+    rerenderAll();
   }
 
   function bindAddButtons(scope) {

@@ -587,15 +587,31 @@
 
   const $ = (sel, scope) => (scope || document).querySelector(sel);
 
-  async function fetchJson(url) {
-    const res = await fetch(url, { cache: 'no-store' });
+  const RETRYABLE = [502, 503, 504];
+  async function fetchJson(url, attempt) {
+    let res;
+    try {
+      res = await fetch(url, { cache: 'no-store' });
+    } catch (e) {
+      if (!attempt) { await sleep(1200); return fetchJson(url, true); }
+      throw e;
+    }
+    if (!res.ok && RETRYABLE.includes(res.status) && !attempt) {
+      await sleep(1500);
+      return fetchJson(url, true);
+    }
     if (!res.ok) throw new Error('HTTP ' + res.status);
     return res.json();
+  }
+
+  function sleep(ms) {
+    return new Promise((r) => setTimeout(r, ms));
   }
 
   document.addEventListener('DOMContentLoaded', () => {
     const root = document.getElementById('product-root');
     if (!root) return;
+    root.innerHTML = '<section class="section" style="min-height:60vh;display:grid;place-items:center"><div style="text-align:center;color:var(--color-ink-muted)">Cargando producto…</div></section>';
     const id = Number(new URLSearchParams(location.search).get('id'));
 
     (async () => {

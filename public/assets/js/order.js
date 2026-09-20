@@ -52,8 +52,19 @@
 
   const $ = (sel, scope) => (scope || document).querySelector(sel);
 
-  async function fetchJson(url, opts) {
-    const res = await fetch(url, Object.assign({ cache: 'no-store' }, opts));
+  const RETRYABLE = [502, 503, 504];
+  async function fetchJson(url, opts, attempt) {
+    let res;
+    try {
+      res = await fetch(url, Object.assign({ cache: 'no-store' }, opts));
+    } catch (e) {
+      if (!attempt) { await new Promise((r) => setTimeout(r, 1200)); return fetchJson(url, opts, true); }
+      throw e;
+    }
+    if (!res.ok && RETRYABLE.includes(res.status) && !attempt) {
+      await new Promise((r) => setTimeout(r, 1500));
+      return fetchJson(url, opts, true);
+    }
     const data = await res.json().catch(() => ({}));
     return { ok: res.ok, status: res.status, data };
   }
@@ -578,6 +589,7 @@
   document.addEventListener('DOMContentLoaded', () => {
     const root = $('#order-root');
     if (!root) return;
+    root.innerHTML = '<div style="min-height:50vh;display:grid;place-items:center;text-align:center;color:var(--color-ink-muted)">Cargando datos del pedido…</div>';
     const id = Number(new URLSearchParams(location.search).get('id'));
     const qty = Math.max(1, Math.min(99, Number(new URLSearchParams(location.search).get('qty')) || 1));
 
