@@ -1,0 +1,8 @@
+# Railway configuration — Nova store backend + static storefront/admin
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "npm start"
+healthcheckEnabled = true
+healthcheckPath = "/healthz"
